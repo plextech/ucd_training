@@ -6,6 +6,25 @@ import seaborn as sns
 import matplotlib.pyplot as plt #used to render data results visually
 
 
+#Build the project dictionary
+
+months = [
+{'Jan', 1},
+{'Feb', 2},
+{'Mar', 3},
+{'Apr', 4},
+{'May', 5},
+{'Jun', 6},
+{'Jul', 7},
+{'Aug', 8},
+{'Sep', 9},
+{'Oct', 10},
+{'Nov', 11},
+{'Dec', 12}
+]
+
+
+
 
 # Get countiees list by JSON
 url = 'https://api.first.org/data/v1/countries'
@@ -49,6 +68,12 @@ print(df.info())
 
 null_pc = df.isnull().mean()
 print('Null % = ' + str(null_pc))
+
+#get the mean time for the data set
+#dfGoodTimes = df[df['Time'] != '0']
+
+#meantime = dfGoodTimes['Time'].value_counts().argmax()
+#print('MEAN TIME = ' + str(meantime))
 
 #Add function to validate Time value in DataFrame
 def timeIsValid(timein):
@@ -123,10 +148,17 @@ def renderMatPlotVisual(data, kind, xLab, yLab, title, ascending) :
 def filter_data_by_column(key, value):
     return df[df[key] == value]
 
-#Loop thru the DataFrame and build a new SummitHour Column
+#Loop thru the DataFrame and build the following new Columns... Age_Group. SummitHour, Month
 for i in range(len(df)):
+
+    month = df.loc[i, 'Date'][3:6]
+    #month_number = months[month]
+
+    df.loc[i, 'Month'] = month
+    #df.loc[i, 'MonthNumber'] = month_number
     if timeIsValid(df.loc[i, 'Time']):
         df.loc[i, 'SummitHour'] = df.loc[i, 'Time'][:2]
+
     if df.loc[i,'Age'] > 0:
         df.loc[i,'Age_Group']=int(df.loc[i,'Age']/10)*10
 
@@ -138,19 +170,19 @@ for i in range(len(df)):
 
 
 
+
 #Sort the DataFrame by Summit Shout
 df.sort_values(by=['SummitHour'], ascending=True)
-
-
 
 
 #group data by Year, needed tp render the number of summits per year over time
 dfGroup = df.groupby(['Year']).size().reset_index(name='Summits')
 #print(dfGroup)
 
-
-
 np_yearly_summits = np.array(dfGroup['Year'], dfGroup['Summits'])
+
+#Get a snapshot of data for people who summited without Oxygen
+df_no_oxygen = filter_data_by_column('Oxy', 'N')
 
 
 #Set up the default palette for the Visuals
@@ -161,13 +193,14 @@ sns.set_style('whitegrid')
 #### DISPLAY NUMBER OF SUMMITS PER YEAR ####
 renderSeabornRelativeVisual(np_yearly_summits, "line", True, "Summits", "Year", 'Summits Timespan', 90)
 
-
 #### DISPLAY NUMBER OF SUMMITS BY ROUTE ####
 renderMatPlotVisual(df.Route.value_counts(), 'bar', "Route","Summits", "Summits by Route", True)
 
 #### DISPLAY NUMBER OF SUMMITS BY SEASON ####
 renderMatPlotVisual(df['Season'].value_counts(), 'bar', "Season","Summits", "Summits per Season", True)
 
+#### DISPLAY NUMBER OF SUMMITS BY MONTH ####
+renderMatPlotVisual(df['Month'].value_counts(), 'bar', "Month","Summits", "Summits per Month", True)
 
 #### DISPLAY NUMBER OF SUMMITS BY HOUR ####
 renderMatPlotVisual(df['SummitHour'].value_counts(), 'bar', "Hour","Summits", "Summits by Hour", True)
@@ -186,8 +219,5 @@ plt.close()
 #### DISPLAY WITH/WITHOUT OXYGEN ####
 renderSeabornCountVisual(df, "Oxy", "Oxygen", "Summits", 'Assisted/Unassisted Summits', 90)
 
-
-#Get a snapshot of data for people who summited without Oxygen
-df_no_oxygen = filter_data_by_column('Oxy', 'N')
 renderSeabornCountVisual(df_no_oxygen, "Citizenship", "Nationality", "Summits", 'Unassisted Summits by Nationality', 90)
 
